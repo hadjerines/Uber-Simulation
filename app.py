@@ -23,6 +23,10 @@ class UberSimulationApp(tk.Tk):
         frame = self.frames[page_name]
         frame.tkraise()
 
+    def calculate_surge(driver_count, request_count):
+        ratio = request_count / max(1, driver_count)
+        return min(3.0, max(1.0, 1.0 + (ratio - 1) * 0.5))  # Caps at 3x
+
 if __name__ == "__main__":
     app = UberSimulationApp()
     app.mainloop()

@@ -57,6 +57,11 @@ DRIVERS = [
 
 RIDE_STATS = {"total_rides": 0, "completed_rides": 0, "total_wait_time": 0, "total_earnings": 0}
 RIDE_QUEUE = []
+# Add after RIDE_QUEUE
+TRAFFIC_ZONES = [
+    {"lat": 40.730, "lon": -73.935, "radius": 0.01, "delay_factor": 1.5},
+    {"lat": 40.712, "lon": -74.005, "radius": 0.008, "delay_factor": 2.0}
+]
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     return math.sqrt((lat1 - lat2) ** 2 + (lon1 - lon2) ** 2)
@@ -216,7 +221,7 @@ class MenuPage(tk.Frame):
         if hasattr(self.controller, 'current_user'):
             self.controller.current_user = None
         self.controller.show_page("LoginPage")
-
+    
 class DriverDashboard(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -249,6 +254,173 @@ class DriverDashboard(tk.Frame):
         self.controller.show_page("LoginPage")
 
 class MainPage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.ride_logs = []  # Initialize ride logs list
+        
+        # Map setup
+        self.map_widget = TkinterMapView(self, width=800, height=600, corner_radius=0)
+        self.map_widget.set_position(40.730610, -73.935242)
+        self.map_widget.set_zoom(12)
+        self.map_widget.pack(side="left", fill="both", expand=True)
+        
+        # Side panel setup
+        self.side_panel = tk.Frame(self)
+        self.side_panel.pack(side="right", fill="y", padx=10)
+        
+        # Info labels
+        tk.Label(self.side_panel, text="Uber Simulation", font=("Arial", 16)).pack(pady=10)
+        self.info_label = tk.Label(self.side_panel, text="", font=("Arial", 12))
+        self.info_label.pack(pady=5)
+        
+        # Stats display
+        self.stats_label = tk.Label(self.side_panel, text="", font=("Arial", 12))
+        self.stats_label.pack(pady=5)
+        
+        # Passenger status
+        tk.Label(self.side_panel, text="Passenger Status", font=("Arial", 14, "bold")).pack(pady=5)
+        self.passenger_status_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
+        self.passenger_status_text.pack(pady=5)
+        
+        # Driver status
+        tk.Label(self.side_panel, text="Driver Status", font=("Arial", 14, "bold")).pack(pady=5)
+        self.driver_status_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
+        self.driver_status_text.pack(pady=5)
+        
+        # Ride log
+        tk.Label(self.side_panel, text="Ride Log", font=("Arial", 14, "bold")).pack(pady=5)
+        self.ride_log_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
+        self.ride_log_text.pack(pady=5)
+        
+        # Navigation buttons
+        tk.Button(self.side_panel, text="Back to Menu", command=lambda: controller.show_page("MenuPage")).pack(pady=10)
+        
+        # Initial setup
+        add_markers(self.map_widget)
+        self.update_stats()
+        self.update_status()
+
+    def simulate_ride(self, passenger_name, destination_coords, ride_type, fare):
+        passenger = next((p for p in PASSENGERS if p["name"] == passenger_name), None)
+        if not passenger:
+            self.log_ride_event(f"Passenger {passenger_name} not found!")
+            return
+            
+        driver = find_closest_driver(passenger["lat"], passenger["lon"])
+        if not driver:
+            self.info_label.config(text="No driver available!")
+            self.log_ride_event(f"No driver available for {passenger_name}, added to queue")
+            RIDE_QUEUE.append((passenger_name, destination_coords, ride_type, fare))
+            return
+
+        # Update statuses
+        driver["status"] = "Busy"
+        passenger["ride_status"] = "In Progress"
+        RIDE_STATS["total_rides"] += 1
+        
+        # Start animation
+        threading.Thread(
+            target=self.animate_ride,
+            args=(driver, passenger, destination_coords, fare),
+            daemon=True
+        ).start()
+
+    def animate_ride(self, driver, passenger, destination_coords, fare):
+        # Phase 1: Driver to pickup
+        self.log_ride_event(f"{driver['name']} is picking up {passenger['name']}...")
+        self.animate_move(driver, (driver["lat"], driver["lon"]), 
+                         (passenger["lat"], passenger["lon"]))
+        
+        # Phase 2: Pickup to destination
+        self.log_ride_event(f"Taking {passenger['name']} to destination...")
+        self.animate_move(driver, (passenger["lat"], passenger["lon"]), destination_coords)
+        
+        # Completion
+        driver["status"] = "Available"
+        passenger["ride_status"] = "Completed"
+        driver["earnings"] += fare
+        RIDE_STATS["completed_rides"] += 1
+        RIDE_STATS["total_earnings"] += fare
+        
+        # Save ride to history
+        ride_data = {
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "passenger": passenger["name"],
+            "driver": driver["name"],
+            "fare": fare,
+            "status": "Completed"
+        }
+        rides = UserManager.load_rides()
+        rides.append(ride_data)
+        UserManager.save_rides(rides)
+        
+        self.log_ride_event(f"Ride completed! Fare: ${fare:.2f}")
+        add_markers(self.map_widget)  # Refresh markers
+
+    def animate_move(self, driver, start, end, steps=20, delay=0.1):
+        lat1, lon1 = start
+        lat2, lon2 = end
+        
+        for i in range(steps):
+            # Calculate intermediate position
+            progress = i / steps
+            lat = lat1 + (lat2 - lat1) * progress
+            lon = lon1 + (lon2 - lon1) * progress
+            driver["lat"], driver["lon"] = lat, lon
+            
+            # Clear and redraw markers
+            self.map_widget.delete_all_marker()
+            self.map_widget.set_marker(lat, lon, text=f"{driver['name']} 🚗")
+            self.map_widget.set_marker(lat2, lon2, text="Destination 🎯")
+            
+            # Update passenger being picked up
+            passenger_marker = next((p for p in PASSENGERS if p["ride_status"] == "In Progress"), None)
+            if passenger_marker:
+                self.map_widget.set_marker(
+                    passenger_marker["lat"], 
+                    passenger_marker["lon"], 
+                    text=f"{passenger_marker['name']} 🪴"
+                )
+            
+            # Force UI update
+            self.update()
+            time.sleep(delay)
+
+    def log_ride_event(self, message):
+        self.ride_logs.append(message)
+        self.ride_log_text.config(state="normal")
+        self.ride_log_text.insert(tk.END, message + "\n")
+        self.ride_log_text.see(tk.END)
+        self.ride_log_text.config(state="disabled")
+        print("Ride Event:", message)  # Debug output
+
+    def update_stats(self):
+        avg_wait = RIDE_STATS["total_wait_time"] / RIDE_STATS["completed_rides"] if RIDE_STATS["completed_rides"] > 0 else 0
+        self.stats_label.config(
+            text=f"Total Rides: {RIDE_STATS['total_rides']}\n"
+                 f"Completed: {RIDE_STATS['completed_rides']}\n"
+                 f"Avg Wait: {avg_wait:.1f}s\n"
+                 f"Total Earnings: ${RIDE_STATS['total_earnings']:.2f}"
+        )
+        self.after(3000, self.update_stats)
+
+    def update_status(self):
+        # Update passenger status
+        self.passenger_status_text.config(state="normal")
+        self.passenger_status_text.delete("1.0", tk.END)
+        for p in PASSENGERS:
+            self.passenger_status_text.insert(tk.END, f"{p['name']} ({p['rating']}★): {p['ride_status']}\n")
+        self.passenger_status_text.config(state="disabled")
+        
+        # Update driver status
+        self.driver_status_text.config(state="normal")
+        self.driver_status_text.delete("1.0", tk.END)
+        for d in DRIVERS:
+            self.driver_status_text.insert(tk.END, f"{d['name']} ({d['rating']}★): {d['status']}\nEarnings: ${d['earnings']:.2f}\n")
+        self.driver_status_text.config(state="disabled")
+        
+        self.after(2000, self.update_status)
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -307,7 +479,7 @@ class MainPage(tk.Frame):
         self.driver_status_text.config(state="disabled")
         
         self.after(2000, self.update_status)
-
+    
 class BookingPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
