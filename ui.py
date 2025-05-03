@@ -206,16 +206,41 @@ class MenuPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        
-        # Safely handle current_user display
+        self.configure(bg="#ecf0f1")  # خلفية الصفحة
+
+        # عرض اسم المستخدم
         user_display = controller.current_user if hasattr(controller, 'current_user') else "Guest"
-        tk.Label(self, text=f"Welcome {user_display}", font=("Arial", 24)).pack(pady=20)
-        
-        tk.Button(self, text="View Map", command=lambda: controller.show_page("MainPage")).pack(pady=10)
-        tk.Button(self, text="Book a Ride", command=lambda: controller.show_page("BookingPage")).pack(pady=10)
-        tk.Button(self, text="Ride History", command=lambda: controller.show_page("RideHistoryPage")).pack(pady=10)
-        tk.Button(self, text="Account Settings", command=lambda: controller.show_page("AccountPage")).pack(pady=10)
-        tk.Button(self, text="Logout", command=self.logout).pack(pady=10)
+        tk.Label(
+            self,
+            text=f"Welcome {user_display}",
+            font=("Segoe UI", 26, "bold"),
+            fg="#2c3e50",
+            bg="#ecf0f1",
+            padx=20, pady=10,
+            borderwidth=2,
+            relief="groove"
+        ).pack(pady=20)
+
+        # تصميم الأزرار
+        button_style = {
+            "font": ("Segoe UI", 14, "bold"),
+            "bg": "#3498db",
+            "fg": "white",
+            "activebackground": "#2980b9",
+            "activeforeground": "white",
+            "relief": "raised",
+            "borderwidth": 2,
+            "padx": 10,
+            "pady": 5
+        }
+
+        # أزرار التنقل
+        tk.Button(self, text="View Map", command=lambda: controller.show_page("MainPage"), **button_style).pack(pady=10)
+        tk.Button(self, text="Book a Ride", command=lambda: controller.show_page("BookingPage"), **button_style).pack(pady=10)
+        tk.Button(self, text="Ride History", command=lambda: controller.show_page("RideHistoryPage"), **button_style).pack(pady=10)
+        tk.Button(self, text="Account Settings", command=lambda: controller.show_page("AccountPage"), **button_style).pack(pady=10)
+        tk.Button(self, text="Logout", command=self.logout, **button_style).pack(pady=10)
+
     
     def logout(self):
         if hasattr(self.controller, 'current_user'):
@@ -259,44 +284,42 @@ class MainPage(tk.Frame):
         self.controller = controller
         self.ride_logs = []  # Initialize ride logs list
         
-        # Map setup
-        self.map_widget = TkinterMapView(self, width=800, height=600, corner_radius=0)
+        # إعداد الخريطة
+        self.map_widget = TkinterMapView(self, width=600, height=200, corner_radius=0)
         self.map_widget.set_position(40.730610, -73.935242)
         self.map_widget.set_zoom(12)
         self.map_widget.pack(side="left", fill="both", expand=True)
         
-        # Side panel setup
-        self.side_panel = tk.Frame(self)
+        # إعداد اللوحة الجانبية
+        self.side_panel = tk.Frame(self, bg="#f4f4f9", width=300)
         self.side_panel.pack(side="right", fill="y", padx=10)
         
-        # Info labels
-        tk.Label(self.side_panel, text="Uber Simulation", font=("Arial", 16)).pack(pady=10)
-        self.info_label = tk.Label(self.side_panel, text="", font=("Arial", 12))
+        # عنوان الصفحة
+        tk.Label(self.side_panel, text="Uber Simulation", font=("Segoe UI", 18, "bold"), fg="#333", bg="#f4f4f9").pack(pady=20)
+        
+        # نص معلومات الحالة
+        self.info_label = tk.Label(self.side_panel, text="", font=("Segoe UI", 12), fg="#555", bg="#f4f4f9")
         self.info_label.pack(pady=5)
         
-        # Stats display
-        self.stats_label = tk.Label(self.side_panel, text="", font=("Arial", 12))
-        self.stats_label.pack(pady=5)
+        # نص الإحصائيات
+        self.stats_label = tk.Label(self.side_panel, text="", font=("Segoe UI", 12), fg="#555", bg="#f4f4f9")
+        self.stats_label.pack(pady=10)
         
-        # Passenger status
-        tk.Label(self.side_panel, text="Passenger Status", font=("Arial", 14, "bold")).pack(pady=5)
-        self.passenger_status_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
-        self.passenger_status_text.pack(pady=5)
+        # حالة الركاب
+        tk.Label(self.side_panel, text="Passenger Status", font=("Segoe UI", 14, "bold"), fg="#444", bg="#f4f4f9").pack(pady=5)
+        self.passenger_status_text = tk.Text(self.side_panel, height=5, width=30, state="disabled", font=("Segoe UI", 12), bd=2, relief="solid")
+        self.passenger_status_text.pack(pady=10)
         
-        # Driver status
-        tk.Label(self.side_panel, text="Driver Status", font=("Arial", 14, "bold")).pack(pady=5)
-        self.driver_status_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
-        self.driver_status_text.pack(pady=5)
+        # حالة السائقين
+        tk.Label(self.side_panel, text="Driver Status", font=("Segoe UI", 14, "bold"), fg="#444", bg="#f4f4f9").pack(pady=5)
+        self.driver_status_text = tk.Text(self.side_panel, height=5, width=30, state="disabled", font=("Segoe UI", 12), bd=2, relief="solid")
+        self.driver_status_text.pack(pady=10)
         
-        # Ride log
-        tk.Label(self.side_panel, text="Ride Log", font=("Arial", 14, "bold")).pack(pady=5)
-        self.ride_log_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
-        self.ride_log_text.pack(pady=5)
-        
-        # Navigation buttons
-        tk.Button(self.side_panel, text="Back to Menu", command=lambda: controller.show_page("MenuPage")).pack(pady=10)
-        
-        # Initial setup
+        # زر العودة للقائمة
+        tk.Button(self.side_panel, text="Back to Menu", font=("Segoe UI", 14), command=lambda: controller.show_page("MenuPage"),
+                  bg="#FF7043", fg="white", relief="flat", height=2, width=20).pack(pady=10)
+
+        # إضافة العلامات على الخريطة
         add_markers(self.map_widget)
         self.update_stats()
         self.update_status()
@@ -314,12 +337,12 @@ class MainPage(tk.Frame):
             RIDE_QUEUE.append((passenger_name, destination_coords, ride_type, fare))
             return
 
-        # Update statuses
+        # تحديث حالة السائق
         driver["status"] = "Busy"
         passenger["ride_status"] = "In Progress"
         RIDE_STATS["total_rides"] += 1
         
-        # Start animation
+        # بدء الرسوم المتحركة
         threading.Thread(
             target=self.animate_ride,
             args=(driver, passenger, destination_coords, fare),
@@ -327,23 +350,23 @@ class MainPage(tk.Frame):
         ).start()
 
     def animate_ride(self, driver, passenger, destination_coords, fare):
-        # Phase 1: Driver to pickup
+        # المرحلة 1: السائق للوصول إلى الركاب
         self.log_ride_event(f"{driver['name']} is picking up {passenger['name']}...")
         self.animate_move(driver, (driver["lat"], driver["lon"]), 
                          (passenger["lat"], passenger["lon"]))
         
-        # Phase 2: Pickup to destination
+        # المرحلة 2: التوصيل إلى الوجهة
         self.log_ride_event(f"Taking {passenger['name']} to destination...")
         self.animate_move(driver, (passenger["lat"], passenger["lon"]), destination_coords)
         
-        # Completion
+        # الانتهاء
         driver["status"] = "Available"
         passenger["ride_status"] = "Completed"
         driver["earnings"] += fare
         RIDE_STATS["completed_rides"] += 1
         RIDE_STATS["total_earnings"] += fare
         
-        # Save ride to history
+        # حفظ الرحلة في السجل
         ride_data = {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "passenger": passenger["name"],
@@ -356,25 +379,25 @@ class MainPage(tk.Frame):
         UserManager.save_rides(rides)
         
         self.log_ride_event(f"Ride completed! Fare: ${fare:.2f}")
-        add_markers(self.map_widget)  # Refresh markers
+        add_markers(self.map_widget)  # تحديث العلامات
 
     def animate_move(self, driver, start, end, steps=20, delay=0.1):
         lat1, lon1 = start
         lat2, lon2 = end
         
         for i in range(steps):
-            # Calculate intermediate position
+            # حساب الموقع المتوسط
             progress = i / steps
             lat = lat1 + (lat2 - lat1) * progress
             lon = lon1 + (lon2 - lon1) * progress
             driver["lat"], driver["lon"] = lat, lon
             
-            # Clear and redraw markers
+            # مسح وإعادة رسم العلامات
             self.map_widget.delete_all_marker()
             self.map_widget.set_marker(lat, lon, text=f"{driver['name']} 🚗")
             self.map_widget.set_marker(lat2, lon2, text="Destination 🎯")
             
-            # Update passenger being picked up
+            # تحديث موقع الركاب
             passenger_marker = next((p for p in PASSENGERS if p["ride_status"] == "In Progress"), None)
             if passenger_marker:
                 self.map_widget.set_marker(
@@ -383,7 +406,7 @@ class MainPage(tk.Frame):
                     text=f"{passenger_marker['name']} 🪴"
                 )
             
-            # Force UI update
+            # تحديث واجهة المستخدم
             self.update()
             time.sleep(delay)
 
@@ -406,14 +429,14 @@ class MainPage(tk.Frame):
         self.after(3000, self.update_stats)
 
     def update_status(self):
-        # Update passenger status
+        # تحديث حالة الركاب
         self.passenger_status_text.config(state="normal")
         self.passenger_status_text.delete("1.0", tk.END)
         for p in PASSENGERS:
             self.passenger_status_text.insert(tk.END, f"{p['name']} ({p['rating']}★): {p['ride_status']}\n")
         self.passenger_status_text.config(state="disabled")
         
-        # Update driver status
+        # تحديث حالة السائقين
         self.driver_status_text.config(state="normal")
         self.driver_status_text.delete("1.0", tk.END)
         for d in DRIVERS:
@@ -421,116 +444,73 @@ class MainPage(tk.Frame):
         self.driver_status_text.config(state="disabled")
         
         self.after(2000, self.update_status)
-    def __init__(self, parent, controller):
-        super().__init__(parent)
-        self.controller = controller
-        
-        self.map_widget = TkinterMapView(self, width=800, height=600, corner_radius=0)
-        self.map_widget.set_position(40.730610, -73.935242)
-        self.map_widget.set_zoom(12)
-        self.map_widget.pack(side="left", fill="both", expand=True)
-        
-        self.side_panel = tk.Frame(self)
-        self.side_panel.pack(side="right", fill="y", padx=10)
-        
-        tk.Label(self.side_panel, text="Uber Simulation", font=("Arial", 16)).pack(pady=10)
-        
-        self.info_label = tk.Label(self.side_panel, text="", font=("Arial", 12))
-        self.info_label.pack(pady=5)
-        
-        self.stats_label = tk.Label(self.side_panel, text="", font=("Arial", 12))
-        self.stats_label.pack(pady=5)
-        
-        tk.Label(self.side_panel, text="Passenger Status", font=("Arial", 14, "bold")).pack(pady=5)
-        self.passenger_status_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
-        self.passenger_status_text.pack(pady=5)
-        
-        tk.Label(self.side_panel, text="Driver Status", font=("Arial", 14, "bold")).pack(pady=5)
-        self.driver_status_text = tk.Text(self.side_panel, height=10, width=30, state="disabled")
-        self.driver_status_text.pack(pady=5)
-        
-        tk.Button(self.side_panel, text="Back to Menu", command=lambda: controller.show_page("MenuPage")).pack(pady=10)
-        
-        add_markers(self.map_widget)
-        self.update_stats()
-        self.update_status()
-    
-    def update_stats(self):
-        avg_wait = RIDE_STATS["total_wait_time"] / RIDE_STATS["completed_rides"] if RIDE_STATS["completed_rides"] > 0 else 0
-        self.stats_label.config(
-            text=f"Total Rides: {RIDE_STATS['total_rides']}\n"
-                 f"Completed: {RIDE_STATS['completed_rides']}\n"
-                 f"Avg Wait: {avg_wait:.1f}s\n"
-                 f"Total Earnings: ${RIDE_STATS['total_earnings']:.2f}"
-        )
-        self.after(3000, self.update_stats)
-    
-    def update_status(self):
-        self.passenger_status_text.config(state="normal")
-        self.passenger_status_text.delete("1.0", tk.END)
-        for p in PASSENGERS:
-            self.passenger_status_text.insert(tk.END, f"{p['name']} ({p['rating']}★): {p['ride_status']}\n")
-        self.passenger_status_text.config(state="disabled")
-        
-        self.driver_status_text.config(state="normal")
-        self.driver_status_text.delete("1.0", tk.END)
-        for d in DRIVERS:
-            self.driver_status_text.insert(tk.END, f"{d['name']} ({d['rating']}★): {d['status']}\nEarnings: ${d['earnings']:.2f}\n")
-        self.driver_status_text.config(state="disabled")
-        
-        self.after(2000, self.update_status)
-    
+
 class BookingPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        
-        tk.Label(self, text="Book a Ride", font=("Arial", 24)).pack(pady=10)
-        
-        tk.Label(self, text="Ride Type:").pack()
+
+        # Main container
+        container = tk.Frame(self, padx=20, pady=20)
+        container.pack(expand=True)
+
+        # Title
+        tk.Label(container, text="Book a Ride", font=("Arial", 20, "bold")).pack(pady=10)
+
+        # Ride type selection
+        ride_type_frame = tk.LabelFrame(container, text="Ride Type", font=("Arial", 12, "bold"), padx=10, pady=5)
+        ride_type_frame.pack(pady=5, fill="x")
         self.ride_type = tk.StringVar(value="UberX")
-        tk.Radiobutton(self, text="UberX", variable=self.ride_type, value="UberX").pack()
-        tk.Radiobutton(self, text="UberBlack", variable=self.ride_type, value="UberBlack").pack()
-        tk.Radiobutton(self, text="UberXL", variable=self.ride_type, value="UberXL").pack()
-        
-        tk.Label(self, text="Pickup Location:").pack()
+        for text in ["UberX", "UberBlack", "UberXL"]:
+            tk.Radiobutton(ride_type_frame, text=text, variable=self.ride_type, value=text).pack(anchor="w")
+
+        # Pickup location dropdown
+        tk.Label(container, text="Pickup Location:", font=("Arial", 11)).pack(anchor="w", pady=(10, 2))
         self.pickup_var = tk.StringVar()
-        self.pickup_dropdown = ttk.Combobox(self, textvariable=self.pickup_var)
+        self.pickup_dropdown = ttk.Combobox(container, textvariable=self.pickup_var, state="readonly", width=30)
         self.pickup_dropdown['values'] = [p["name"] for p in PASSENGERS]
         self.pickup_dropdown.current(0)
         self.pickup_dropdown.pack()
-        
-        tk.Label(self, text="Destination (lat, lon):").pack()
-        self.dest_entry = tk.Entry(self)
+
+        # Destination input
+        tk.Label(container, text="Destination (lat, lon):", font=("Arial", 11)).pack(anchor="w", pady=(10, 2))
+        self.dest_entry = tk.Entry(container, width=30)
         self.dest_entry.insert(0, "40.735, -74.002")
         self.dest_entry.pack()
-        
-        self.estimate_btn = tk.Button(self, text="Get Estimate", command=self.get_estimate)
-        self.estimate_btn.pack(pady=5)
-        
-        self.estimate_label = tk.Label(self, text="", font=("Arial", 12))
-        self.estimate_label.pack()
-        
-        self.book_btn = tk.Button(self, text="Confirm Booking", command=self.book_ride, state="disabled")
-        self.book_btn.pack(pady=10)
-        
-        tk.Button(self, text="Back to Menu", command=lambda: controller.show_page("MenuPage")).pack()
-    
+
+     # زر الحصول على التقدير
+        self.estimate_btn = tk.Button(self, text="Get Estimate", font=("Segoe UI", 14), command=self.get_estimate,
+                                      bg="#4CAF50", fg="white", relief="flat", height=1, width=20)
+        self.estimate_btn.pack(pady=(0, 5))
+
+        # عرض التقديرات
+        self.estimate_label = tk.Label(self, text="", font=("Segoe UI", 12), fg="#333", bg="#f4f4f9")
+        self.estimate_label.pack(pady=(0, 20))
+
+        # زر تأكيد الحجز
+        self.book_btn = tk.Button(self, text="Confirm Booking", font=("Segoe UI", 14), command=self.book_ride, 
+                                  state="disabled", bg="#008CBA", fg="white", relief="flat", height=1, width=20)
+        self.book_btn.pack(pady=5)
+
+        # زر العودة إلى القائمة
+        tk.Button(self, text="Back to Menu", font=("Segoe UI", 14), command=lambda: controller.show_page("MenuPage"),
+                  bg="#FF7043", fg="white", relief="flat", height=1, width=20).pack(pady=5)
+
     def get_estimate(self):
         passenger_name = self.pickup_var.get()
         passenger = next((p for p in PASSENGERS if p["name"] == passenger_name), None)
-        
+
         try:
             dest_lat, dest_lon = map(float, self.dest_entry.get().split(","))
         except ValueError:
             messagebox.showerror("Error", "Invalid destination coordinates")
             return
-        
+
         distance = calculate_distance(passenger["lat"], passenger["lon"], dest_lat, dest_lon)
         distance_km = distance * 111  # approx km per degree
         est_time = distance_km * 2  # approx minutes (2 min per km)
         fare = calculate_fare(distance_km, est_time, self.ride_type.get())
-        
+
         self.estimate_label.config(
             text=f"Distance: {distance_km:.1f} km\n"
                  f"Est. Time: {est_time:.0f} min\n"
@@ -538,20 +518,23 @@ class BookingPage(tk.Frame):
         )
         self.book_btn.config(state="normal")
         self.current_fare = fare
-    
+
     def book_ride(self):
         passenger_name = self.pickup_var.get()
         passenger = next((p for p in PASSENGERS if p["name"] == passenger_name), None)
-        
+
         try:
             dest_lat, dest_lon = map(float, self.dest_entry.get().split(","))
         except ValueError:
             messagebox.showerror("Error", "Invalid destination coordinates")
             return
-        
+
         main_page = self.controller.frames["MainPage"]
         main_page.simulate_ride(passenger_name, (dest_lat, dest_lon), self.ride_type.get(), self.current_fare)
         self.controller.show_page("MainPage")
+
+
+
 
 class RideHistoryPage(tk.Frame):
     def __init__(self, parent, controller):
